@@ -1,0 +1,23 @@
+node_modules
+.npm-cache/
+*.tsbuildinfo
+.env
+dist
+coverage
+*.log
+prisma/dev.db
+prisma/dev.db-journal
+
+# Local media/assets not stored in Git
+exercise-media/
+android/gradle/gradle-daemon-jvm.properties
+
+# Python & environments
+venv/
+.venv/
+__pycache__/
+*.py[cod]
+
+# OS files
+.DS_Store
+Thumbs.db

@@ -1,0 +1,194 @@
+import { NutritionInputType } from '@prisma/client';
+import type { FastifyInstance } from 'fastify';
+
+import { getPrismaClient } from '../db/prisma';
+import { authenticateRequest } from '../middleware/auth';
+import { addNutritionImageToEntry, ingestNutrition, getRecentNutritionEntries } from '../services/nutrition.service';
+
+interface NutritionIngestBody {
+  inputType: NutritionInputType;
+  rawText?: string;
+  consumedAt?: string;
+  imageUrls?: string[];
+  items?: Array<{
+    name: string;
+    quantity?: number;
+    unit?: string;
+    calories: number;
+    proteinG?: number;
+    carbsG?: number;
+    fatG?: number;
+    confidence?: number;
+  }>;
+}
+
+export async function nutritionRoutes(fastify: FastifyInstance): Promise<void> {
+  fastify.post<{ Body: NutritionIngestBody }>(
+    '/nutrition/ingest',
+    { preHandler: authenticateRequest },
+    async (request, reply) => {
+      const { inputType, rawText, consumedAt, imageUrls, items } = request.body;
+      const userId = request.userId!;
+
+      if (!Object.values(NutritionInputType).includes(inputType)) {
+        return reply.status(400).send({ error: 'Valid inputType is required' });
+      }
+
+      try {
+        const entry = await ingestNutrition({
+          userId,
+          inputType,
+          rawText,
+          consumedAt,
+          imageUrls,
+          items
+        });
+
+        return reply.status(201).send({
+          id: entry.id,
+          userId: entry.userId,
+          totalCalories: entry.totalCalories,
+          totalProteinG: entry.totalProteinG,
+          totalCarbsG: entry.totalCarbsG,
+          totalFatG: entry.totalFatG,
+          status: entry.status,
+          itemCount: entry.items.length,
+          consumedAt: entry.consumedAt,
+          createdAt: entry.createdAt
+        });
+      } catch (error) {
+        request.log.error(error);
+        return reply.status(400).send({ error: error instanceof Error ? error.message : 'Failed to ingest nutrition' });
+      }
+    }
+  );
+
+  fastify.post<{ Params: { entryId: string } }>(
+    '/nutrition/:entryId/images',
+    { preHandler: authenticateRequest },
+    async (request, reply) => {
+      const userId = request.userId!;
+      const { entryId } = request.params;
+
+      try {
+        const file = await request.file();
+
+        if (!file) {
+          return reply.status(400).send({ error: 'No file uploaded. Use multipart/form-data with field name "file".' });
+        }
+
+        if (!file.mimetype.startsWith('image/')) {
+          return reply.status(400).send({ error: 'Only image files are allowed' });
+        }
+
+        const fileBuffer = await file.toBuffer();
+        const createdImage = await addNutritionImageToEntry({
+          userId,
+          entryId,
+          fileBuffer,
+          mimeType: file.mimetype,
+          fileName: file.filename
+        });
+
+        return reply.status(201).send({
+          id: createdImage.id,
+          entryId: createdImage.entryId,
+          storageUrl: createdImage.storageUrl,
+          mimeType: createdImage.mimeType,
+          createdAt: createdImage.createdAt
+        });
+      } catch (error) {
+        request.log.error(error);
+        return reply.status(400).send({ error: error instanceof Error ? error.message : 'Failed to upload nutrition image' });
+      }
+    }
+  );
+
+  fastify.get<{ Querystring: { limit?: string } }>(
+    '/nutrition/entries',
+    { 
+      preHandler: [authenticateRequest],
+      schema: {
+        querystring: {
+          type: 'object',
+          properties: {
+            limit: { type: 'string' }
+          }
+        }
+      }
+    },
+    async (request, reply) => {
+      const userId = request.userId!;
+      const limit = request.query.limit ? parseInt(request.query.limit, 10) : 10;
+
+      try {
+        const entries = await getRecentNutritionEntries(userId, limit);
+        return entries;
+      } catch (error) {
+        request.log.error(error);
+        return reply.status(400).send({ error: error instanceof Error ? error.message : 'Failed to fetch nutrition entries' });
+      }
+    }
+  );
+
+  // GET nutrition goals
+  fastify.get(
+    '/nutrition/goals',
+    { preHandler: [authenticateRequest] },
+    async (request, reply) => {
+      const prisma = getPrismaClient();
+      const goal = await prisma.userNutritionGoal.findUnique({
+        where: { userId: request.userId! }
+      });
+      return reply.send(goal ?? {
+        dailyCalorieTarget: 2000,
+        dailyProteinG: null,
+        dailyCarbsG: null,
+        dailyFatG: null,
+        dailyFiberG: null,
+        dailyWaterMl: 2000
+      });
+    }
+  );
+
+  // POST upsert nutrition goals
+  fastify.post<{ Body: {
+    dailyCalorieTarget?: number;
+    dailyProteinG?: number;
+    dailyCarbsG?: number;
+    dailyFatG?: number;
+    dailyFiberG?: number;
+    dailyWaterMl?: number;
+  } }>(
+    '/nutrition/goals',
+    { preHandler: [authenticateRequest] },
+    async (request, reply) => {
+      const prisma = getPrismaClient();
+      const {
+        dailyCalorieTarget,
+        dailyProteinG,
+        dailyCarbsG,
+        dailyFatG,
+        dailyFiberG,
+        dailyWaterMl
+      } = request.body ?? {};
+
+      const data = {
+        ...(typeof dailyCalorieTarget === 'number' ? { dailyCalorieTarget } : {}),
+        ...(typeof dailyProteinG === 'number' ? { dailyProteinG } : {}),
+        ...(typeof dailyCarbsG === 'number' ? { dailyCarbsG } : {}),
+        ...(typeof dailyFatG === 'number' ? { dailyFatG } : {}),
+        ...(typeof dailyFiberG === 'number' ? { dailyFiberG } : {}),
+        ...(typeof dailyWaterMl === 'number' ? { dailyWaterMl } : {})
+      };
+
+      const goal = await prisma.userNutritionGoal.upsert({
+        where: { userId: request.userId! },
+        create: { userId: request.userId!, ...data },
+        update: data
+      });
+
+      return reply.status(200).send(goal);
+    }
+  );
+}

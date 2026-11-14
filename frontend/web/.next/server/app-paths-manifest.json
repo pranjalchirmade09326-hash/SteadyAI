@@ -1,0 +1,11 @@
+{
+  "/manifest.webmanifest/route": "app/manifest.webmanifest/route.js",
+  "/page": "app/page.js",
+  "/(platform)/dashboard/page": "app/(platform)/dashboard/page.js",
+  "/(platform)/nutrition/page": "app/(platform)/nutrition/page.js",
+  "/(platform)/workouts/page": "app/(platform)/workouts/page.js",
+  "/(platform)/challenges/page": "app/(platform)/challenges/page.js",
+  "/(platform)/store/page": "app/(platform)/store/page.js",
+  "/(platform)/ai-coach/page": "app/(platform)/ai-coach/page.js",
+  "/(platform)/reports/page": "app/(platform)/reports/page.js"
+}
