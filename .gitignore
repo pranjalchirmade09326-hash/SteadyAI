@@ -21,3 +21,10 @@ __pycache__/
 # OS files
 .DS_Store
 Thumbs.db
+
+#folder
+.github/
+deploy/
+docs/
+test/
+
