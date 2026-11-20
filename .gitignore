@@ -25,6 +25,6 @@ Thumbs.db
 #folder
 .github/
 deploy/
-docs/
+docs/platform
 test/
 
