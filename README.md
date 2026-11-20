@@ -147,17 +147,6 @@ npm run test:integration
 
 ```text
 SteadyAI/
-├── docs/                     # Comprehensive documentation (BRD, PRD, SRD, Schemas, ERD, Commands)
-│   ├── BRD.md                # Business Requirements Document
-│   ├── PRD.md                # Product Requirements Document
-│   ├── SRD.md                # Software Requirements Document (SRS)
-│   ├── USER_STORIES.md       # Agile user stories with Gherkin acceptance criteria
-│   ├── FEATURES.md           # Detailed functional specifications matrix
-│   ├── DATA_SCHEMAS.md       # Complete 32-model database dictionary
-│   ├── erd.mmd               # Mermaid Entity Relationship Diagram script
-│   ├── SYSTEM_FLOWS.md       # Mermaid sequence & operational flows
-│   ├── COMMANDS.md           # All-in-one terminal command reference
-│   └── CLEAN_ARCHITECTURE.md # Clean Architecture standards and layer guide
 ├── frontend/
 │   ├── web/                  # Next.js 15 Web Portal (Port 3001)
 │   ├── mobile/               # React Native / Expo Mobile App (Port 8081)
