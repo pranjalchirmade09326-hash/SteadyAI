@@ -1,4 +1,5 @@
 import type { FastifyReply, FastifyRequest } from 'fastify';
+import { UserRole } from '@prisma/client';
 
 import { env } from '../config/env';
 import { verifyAppJwt } from '../routes/auth';
@@ -26,6 +27,14 @@ function applyDevHeaderAuth(request: FastifyRequest): boolean {
   if (typeof testUserId === 'string' && testUserId.trim()) {
     request.userId = testUserId.trim();
     request.userEmail = request.headers['x-test-user-email'] as string | undefined;
+
+    const testRole = request.headers['x-test-user-role'];
+    if (typeof testRole === 'string' && testRole.trim()) {
+      const normalizedRole = testRole.trim().toUpperCase();
+      if (normalizedRole in UserRole) {
+        request.userRole = normalizedRole as UserRole;
+      }
+    }
     return true;
   }
 
@@ -48,6 +57,12 @@ export async function authenticateRequest(request: FastifyRequest, reply: Fastif
     const user = verifyAppJwt(token);
     request.userId = user.sub;
     request.userEmail = user.email;
+    if (user.role) {
+      request.userRole = user.role;
+    }
+    if (user.workspaceId) {
+      request.workspaceId = user.workspaceId;
+    }
   } catch (error) {
     request.log.warn({ err: error }, 'Auth failed');
     await reply.status(401).send({ error: 'Unauthorized' });
@@ -70,6 +85,12 @@ export async function optionalAuthenticateRequest(request: FastifyRequest): Prom
     const user = verifyAppJwt(token);
     request.userId = user.sub;
     request.userEmail = user.email;
+    if (user.role) {
+      request.userRole = user.role;
+    }
+    if (user.workspaceId) {
+      request.workspaceId = user.workspaceId;
+    }
   } catch (error) {
     request.log.warn({ err: error }, 'Optional auth failed, continuing as unauthenticated');
     // Don't fail on auth error for optional auth

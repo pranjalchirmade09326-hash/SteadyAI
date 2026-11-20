@@ -53,6 +53,11 @@ enum CoachFeedbackStatus {
   CLOSED
 }
 
+enum CoachAssignmentStatus {
+  ACTIVE
+  INACTIVE
+}
+
 enum NotificationType {
   DAILY_CHECK_IN_REMINDER
   WEEKLY_REFLECTION
@@ -201,16 +206,21 @@ model User {
   apiKeys              UserApiKeys?
   nutritionDailySummaries NutritionDailySummary[]
   nutritionHealthCorrelations NutritionHealthCorrelation[]
+  coachAssignments    CoachAssignment[]        @relation("CoachAssignments")
+  memberAssignments   CoachAssignment[]        @relation("MemberAssignments")
+  passwordHash        String?
+  role                UserRole                 @default(MEMBER)
 }
 
 model Workspace {
-  id        String            @id @default(uuid())
-  name      String
-  ownerId   String            @db.Uuid
-  owner     User              @relation(fields: [ownerId], references: [id])
-  members   WorkspaceMember[]
-  createdAt DateTime          @default(now())
-  updatedAt DateTime          @updatedAt
+  id               String            @id @default(uuid())
+  name             String
+  ownerId          String            @db.Uuid
+  owner            User              @relation(fields: [ownerId], references: [id])
+  members          WorkspaceMember[]
+  coachAssignments CoachAssignment[]
+  createdAt        DateTime          @default(now())
+  updatedAt        DateTime          @updatedAt
 }
 
 model WorkspaceMember {
@@ -223,6 +233,26 @@ model WorkspaceMember {
   createdAt   DateTime  @default(now())
 
   @@unique([workspaceId, userId])
+}
+
+model CoachAssignment {
+  id          String                @id @default(uuid()) @db.Uuid
+  coachId     String                @db.Uuid
+  memberId    String                @db.Uuid
+  workspaceId String?
+  status      CoachAssignmentStatus @default(ACTIVE)
+  assignedAt  DateTime              @default(now())
+  createdAt   DateTime              @default(now())
+  updatedAt   DateTime              @updatedAt
+
+  coach     User       @relation("CoachAssignments", fields: [coachId], references: [id], onDelete: Cascade)
+  member    User       @relation("MemberAssignments", fields: [memberId], references: [id], onDelete: Cascade)
+  workspace Workspace? @relation(fields: [workspaceId], references: [id], onDelete: SetNull)
+
+  @@unique([coachId, memberId])
+  @@index([coachId, status])
+  @@index([memberId, status])
+  @@index([workspaceId])
 }
 
 model ExerciseMedia {

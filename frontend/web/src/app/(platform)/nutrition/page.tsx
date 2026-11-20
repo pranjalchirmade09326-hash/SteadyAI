@@ -1,0 +1,128 @@
+'use client';
+
+import { useAuth } from '@/auth';
+import { createApiClient, type NutritionEntry } from '@/lib/api';
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import { DailySummary } from '@/features/nutrition/components/DailySummary';
+import { MealLogger } from '@/features/nutrition/components/MealLogger';
+import { RecentEntries } from '@/features/nutrition/components/RecentEntries';
+import Link from 'next/link';
+import { BottomSheet } from '@/components/BottomSheet';
+import { SkeletonCard } from '@/components/SkeletonCard';
+
+export default function NutritionPage() {
+  const { token } = useAuth();
+  const api = useMemo(() => createApiClient(token ?? undefined), [token]);
+  const [entries, setEntries] = useState<NutritionEntry[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [isMealSheetOpen, setIsMealSheetOpen] = useState(false);
+  
+  const fetchEntries = useCallback(async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      const recentEntries = await api.getNutritionEntries();
+      setEntries(Array.isArray(recentEntries) ? recentEntries : []);
+    } catch (err) {
+      console.warn('Nutrition entries fetch notice (using offline/demo fallback):', err);
+      // Suppress raw 401/Unauthorized from showing as a red banner
+      setEntries([]);
+    } finally {
+      setLoading(false);
+    }
+  }, [api]);
+
+  useEffect(() => {
+    fetchEntries();
+  }, [fetchEntries]);
+
+  const handleMealLogged = (newEntry: NutritionEntry) => {
+    setEntries(prev => [newEntry, ...prev]);
+    setIsMealSheetOpen(false);
+  };
+
+  const shouldDisplayError = Boolean(
+    error && 
+    !error.toLowerCase().includes('unauthorized') && 
+    !error.toLowerCase().includes('missing bearer token')
+  );
+
+  return (
+    <div className="w-full min-h-screen px-4 pb-28 pt-4 sm:px-6 lg:px-8 xl:px-10 2xl:px-12">
+      <header className="mb-5 rounded-[34px] border border-white/80 bg-[#fffaf5]/84 p-5 shadow-[0_18px_70px_rgba(80,48,24,0.1)] dark:border-[#4a372b] dark:bg-[#231914]/88 dark:shadow-[0_18px_70px_rgba(0,0,0,0.28)] sm:p-7">
+        <p className="text-xs font-bold uppercase tracking-[0.26em] text-[#8a4b22] dark:text-[#f3c99f]">Nutrition expert</p>
+        <div className="mt-3 flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
+          <div>
+            <h1 className="text-3xl font-bold tracking-[-0.05em] text-[#1d140d] dark:text-[#fff7ed] sm:text-4xl">Nutrition</h1>
+            <p className="mt-2 max-w-2xl text-sm leading-6 text-[#5f5145] dark:text-[#d6c2ae] sm:text-base">
+              Log meals in plain language, review today&apos;s macros, and keep recent meals easy to find on your phone.
+            </p>
+          </div>
+          <Link
+            href="/ai-coach"
+            className="inline-flex justify-center rounded-full bg-[#1d140d] px-5 py-3 text-sm font-semibold text-white shadow-[0_12px_28px_rgba(29,20,13,0.2)]"
+          >
+            Ask for a meal idea
+          </Link>
+        </div>
+      </header>
+      
+      {shouldDisplayError && (
+        <div className="mb-4 rounded-[24px] border border-red-200 bg-red-50 p-4 text-center text-sm font-medium text-red-700">
+          {error}
+        </div>
+      )}
+
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-[0.95fr_1.05fr] 2xl:grid-cols-[1fr_1.1fr]">
+        <div className="space-y-5">
+          <div className="hidden md:block">
+            <MealLogger onMealLogged={handleMealLogged} />
+          </div>
+          <DailySummary entries={entries} />
+        </div>
+        <section className="rounded-[32px] border border-white/80 bg-[#fffaf5]/82 p-4 shadow-[0_18px_60px_rgba(80,48,24,0.1)] dark:border-[#4a372b] dark:bg-[#231914]/88 dark:shadow-[0_18px_60px_rgba(0,0,0,0.3)] sm:p-6">
+          <div className="mb-4 flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
+            <div>
+              <p className="text-xs font-bold uppercase tracking-[0.24em] text-[#8a4b22] dark:text-[#f3c99f]">Meal history</p>
+              <h2 className="mt-1 text-2xl font-bold tracking-[-0.04em] text-[#1d140d] dark:text-[#fff7ed]">Recent Entries</h2>
+            </div>
+            <p className="rounded-full bg-[#f3e7da] px-3 py-1 text-xs font-semibold text-[#7a4b28] dark:bg-[#4a372b] dark:text-[#f3c99f]">{entries.length} meals</p>
+          </div>
+          {loading ? (
+            <RecentEntriesLoading />
+          ) : (
+            <RecentEntries entries={entries} />
+          )}
+        </section>
+      </div>
+
+      <button
+        type="button"
+        onClick={() => setIsMealSheetOpen(true)}
+        className="fixed bottom-[calc(5.75rem+var(--safe-bottom))] right-4 z-30 min-h-14 rounded-full bg-[#1d140d] px-5 py-4 text-base font-bold text-white shadow-[0_18px_46px_rgba(29,20,13,0.3)] active:scale-[0.99] dark:bg-[#fff7ed] dark:text-[#1d140d] md:hidden"
+      >
+        Log meal
+      </button>
+
+      <BottomSheet
+        open={isMealSheetOpen}
+        title="Log a meal"
+        description="Describe what you ate. SteadyAI will estimate calories and macros."
+        onClose={() => setIsMealSheetOpen(false)}
+      >
+        <MealLogger compact onMealLogged={handleMealLogged} />
+      </BottomSheet>
+    </div>
+  );
+}
+
+function RecentEntriesLoading() {
+  return (
+    <div className="space-y-3">
+      {[0, 1, 2].map((item) => (
+        <SkeletonCard key={item} rows={4} />
+      ))}
+    </div>
+  );
+}

@@ -44,7 +44,7 @@ export async function uploadNutritionImage(input: UploadNutritionImageInput): Pr
       'Content-Type': input.mimeType,
       'x-upsert': 'false'
     },
-    body: input.buffer
+    body: input.buffer as unknown as BodyInit
   });
 
   if (!response.ok) {

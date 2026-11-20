@@ -31,6 +31,9 @@ export async function resetIntegrationDb(): Promise<void> {
     prisma.communityGroup.deleteMany(),
     prisma.purchase.deleteMany(),
     prisma.product.deleteMany(),
+    prisma.coachAssignment.deleteMany(),
+    prisma.workspaceMember.deleteMany(),
+    prisma.workspace.deleteMany(),
     prisma.user.deleteMany()
   ]);
 }

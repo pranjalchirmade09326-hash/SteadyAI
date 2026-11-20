@@ -1,4 +1,4 @@
-// File: D:\SteadyAI\frontend\web\src\app\(platform)\workouts\page.tsx
+// File: D:\SteadyAI\SteadyAI\frontend\web\src\app\(platform)\workouts\page.tsx
 import * as entry from '../../../../../src/app/(platform)/workouts/page.js'
 import type { ResolvingMetadata, ResolvingViewport } from 'next/dist/lib/metadata/types/metadata-interface.js'
 

@@ -89,7 +89,7 @@ export async function workoutRoutes(fastify: FastifyInstance): Promise<void> {
         sourceApp: body.sourceApp,
         deviceInstallId: body.deviceInstallId
       });
-      return reply.status(200).send(result);
+      return reply.status(200).send({ success: true, ...result });
     } catch (error) {
       request.log.error(error);
       return reply.status(400).send({ error: error instanceof Error ? error.message : 'Failed to save workout summary' });

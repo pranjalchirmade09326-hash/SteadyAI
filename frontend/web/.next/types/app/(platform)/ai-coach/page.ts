@@ -1,4 +1,4 @@
-// File: D:\SteadyAI\frontend\web\src\app\(platform)\ai-coach\page.tsx
+// File: D:\SteadyAI\SteadyAI\frontend\web\src\app\(platform)\ai-coach\page.tsx
 import * as entry from '../../../../../src/app/(platform)/ai-coach/page.js'
 import type { ResolvingMetadata, ResolvingViewport } from 'next/dist/lib/metadata/types/metadata-interface.js'
 

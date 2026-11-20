@@ -1,4 +1,4 @@
-// File: D:\SteadyAI\frontend\web\src\app\sign-up\page.tsx
+// File: D:\SteadyAI\SteadyAI\frontend\web\src\app\sign-up\page.tsx
 import * as entry from '../../../../src/app/sign-up/page.js'
 import type { ResolvingMetadata, ResolvingViewport } from 'next/dist/lib/metadata/types/metadata-interface.js'
 

@@ -19,10 +19,14 @@ import { storeRoutes } from './store';
 import { workoutRoutes } from './workouts';
 import { platformRoutes } from './platform';
 import { userApiKeysRoutes } from './user-api-keys';
+import { coachRoutes } from './coach';
+import { memberRoutes } from './member';
 
 export async function registerRoutes(fastify: FastifyInstance): Promise<void> {
   await fastify.register(authRoutes);
-  await fastify.register(agentOpsRoutes, { prefix: '/api' });
+  await fastify.register(coachRoutes);
+  await fastify.register(memberRoutes);
+  await fastify.register(agentOpsRoutes);
   await fastify.register(agentRoutes);
   await fastify.register(assistantRoutes);
   await fastify.register(appsMcpRoutes);
